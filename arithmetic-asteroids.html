@@ -1,0 +1,1021 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arithmetic Asteroids</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --panel: rgba(8, 18, 36, 0.86);
+      --panel-strong: rgba(12, 28, 54, 0.96);
+      --line: rgba(147, 197, 253, 0.28);
+      --text: #eef6ff;
+      --muted: #9fb8d8;
+      --accent: #7dd3fc;
+      --good: #6ee7b7;
+      --warn: #fbbf24;
+      --bad: #fb7185;
+      --metal: #31435c;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #030712;
+      color: var(--text);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      min-height: 560px;
+      background:
+        radial-gradient(circle at 22% 15%, rgba(125, 211, 252, 0.16), transparent 22%),
+        radial-gradient(circle at 70% 20%, rgba(251, 191, 36, 0.11), transparent 18%),
+        linear-gradient(180deg, #06101f 0%, #050815 58%, #02040b 100%);
+      isolation: isolate;
+    }
+
+    #space {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .hud {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: clamp(10px, 1.8vw, 22px);
+      gap: 12px;
+      z-index: 2;
+    }
+
+    .topbar {
+      grid-row: 1;
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) auto minmax(180px, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .brand,
+    .status,
+    .settings,
+    .answer-console {
+      pointer-events: auto;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: 0 18px 60px rgba(0, 0, 0, 0.34);
+      backdrop-filter: blur(14px);
+    }
+
+    .brand {
+      width: fit-content;
+      min-width: 220px;
+      padding: 12px 14px;
+      border-radius: 8px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.05rem, 1.4vw, 1.3rem);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .status {
+      justify-self: center;
+      min-width: min(540px, 48vw);
+      border-radius: 8px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(72px, 1fr));
+      gap: 8px;
+    }
+
+    .meter {
+      min-height: 58px;
+      padding: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.045);
+      text-align: center;
+    }
+
+    .meter span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+
+    .meter strong {
+      display: block;
+      margin-top: 2px;
+      font-size: clamp(1.05rem, 2.1vw, 1.55rem);
+      line-height: 1.15;
+    }
+
+    .settings {
+      justify-self: end;
+      width: min(390px, 34vw);
+      border-radius: 8px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    label {
+      display: grid;
+      gap: 4px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    select,
+    input[type="number"] {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid rgba(147, 197, 253, 0.32);
+      border-radius: 6px;
+      background: rgba(2, 6, 23, 0.82);
+      color: var(--text);
+      padding: 0 10px;
+      outline: none;
+    }
+
+    select:focus,
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.14);
+    }
+
+    .icon-button,
+    .fire-button {
+      min-height: 40px;
+      border: 1px solid rgba(125, 211, 252, 0.46);
+      border-radius: 6px;
+      background: linear-gradient(180deg, rgba(14, 165, 233, 0.95), rgba(3, 105, 161, 0.95));
+      color: white;
+      cursor: pointer;
+      font-weight: 800;
+      box-shadow: 0 10px 30px rgba(14, 165, 233, 0.24);
+    }
+
+    .icon-button {
+      width: 44px;
+      font-size: 1.05rem;
+    }
+
+    .center-message {
+      grid-row: 2;
+      align-self: center;
+      justify-self: center;
+      width: min(520px, calc(100vw - 28px));
+      padding: 18px;
+      border: 1px solid rgba(125, 211, 252, 0.34);
+      border-radius: 8px;
+      background: rgba(2, 8, 23, 0.78);
+      text-align: center;
+      backdrop-filter: blur(14px);
+      pointer-events: auto;
+    }
+
+    .center-message h2 {
+      margin: 0 0 8px;
+      font-size: clamp(1.45rem, 4vw, 2.6rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .center-message p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .launch {
+      min-height: 44px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 6px;
+      background: linear-gradient(180deg, #34d399, #059669);
+      color: #022c22;
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .answer-console {
+      grid-row: 3;
+      align-self: end;
+      justify-self: center;
+      width: min(760px, calc(100vw - 24px));
+      border-radius: 8px 8px 0 0;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: minmax(120px, 1fr) minmax(150px, 230px) 112px minmax(120px, 1fr);
+      gap: 10px;
+      align-items: center;
+      transform: translateY(1px);
+    }
+
+    .target-readout {
+      min-height: 56px;
+      min-width: 0;
+      padding: 8px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.045);
+      overflow: hidden;
+    }
+
+    .target-readout span,
+    .message-log span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .target-readout strong {
+      display: block;
+      max-width: 100%;
+      margin-top: 1px;
+      font-size: clamp(1.15rem, 2.3vw, 1.8rem);
+      line-height: 1.1;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .answer-input {
+      height: 56px;
+      min-width: 0;
+      width: 100%;
+      border: 1px solid rgba(125, 211, 252, 0.48);
+      border-radius: 6px;
+      background: rgba(2, 6, 23, 0.9);
+      color: var(--text);
+      text-align: center;
+      font-size: 1.65rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .fire-button {
+      height: 56px;
+      font-size: 0.96rem;
+    }
+
+    .message-log {
+      min-height: 56px;
+      min-width: 0;
+      padding: 8px 10px;
+      border-left: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text);
+      line-height: 1.25;
+      overflow: hidden;
+    }
+
+    .message-log strong {
+      display: block;
+      max-width: 100%;
+      margin-top: 4px;
+      font-size: 0.95rem;
+      overflow-wrap: anywhere;
+    }
+
+    .cockpit {
+      position: absolute;
+      inset: auto 0 0;
+      height: min(36vh, 300px);
+      z-index: 1;
+      pointer-events: none;
+      background:
+        linear-gradient(150deg, transparent 0 12%, rgba(0, 0, 0, 0.66) 12.2% 21%, transparent 21.2%),
+        linear-gradient(210deg, transparent 0 12%, rgba(0, 0, 0, 0.66) 12.2% 21%, transparent 21.2%),
+        radial-gradient(ellipse at 50% 106%, rgba(28, 44, 68, 0.98) 0 32%, rgba(11, 20, 34, 0.98) 33% 55%, transparent 56%);
+    }
+
+    .cockpit::before,
+    .cockpit::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      width: 38vw;
+      height: 58%;
+      background: linear-gradient(180deg, #50647d, #111827 42%, #050814);
+      border-top: 2px solid rgba(191, 219, 254, 0.24);
+      box-shadow: inset 0 18px 32px rgba(255, 255, 255, 0.08);
+    }
+
+    .cockpit::before {
+      left: -8vw;
+      transform: skewX(18deg);
+      border-radius: 0 8px 0 0;
+    }
+
+    .cockpit::after {
+      right: -8vw;
+      transform: skewX(-18deg);
+      border-radius: 8px 0 0 0;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 900px) {
+      .game {
+        min-height: 660px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .brand,
+      .status,
+      .settings {
+        justify-self: stretch;
+        width: 100%;
+        min-width: 0;
+      }
+
+      .status {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .settings {
+        grid-template-columns: 1fr 1fr 48px;
+      }
+
+      .answer-console {
+        grid-template-columns: 1fr 116px;
+      }
+
+      .target-readout,
+      .message-log {
+        grid-column: 1 / -1;
+      }
+
+      .fire-button {
+        width: 116px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .game {
+        min-height: 700px;
+      }
+
+      .hud {
+        padding: 8px;
+        gap: 8px;
+      }
+
+      .status {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5px;
+        padding: 6px;
+      }
+
+      .meter {
+        min-height: 48px;
+        padding: 6px 4px;
+      }
+
+      .meter span {
+        font-size: 0.58rem;
+        letter-spacing: 0.04em;
+      }
+
+      .settings {
+        grid-template-columns: 1fr 1fr 44px;
+        gap: 6px;
+        padding: 6px;
+      }
+
+      .icon-button {
+        width: 44px;
+      }
+
+      .answer-console {
+        grid-template-columns: minmax(0, 1fr) 104px;
+        padding: 8px;
+        gap: 7px;
+      }
+
+      .answer-input,
+      .fire-button {
+        height: 48px;
+      }
+
+      .fire-button {
+        width: 104px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="game" aria-label="Arithmetic Asteroids game">
+    <canvas id="space"></canvas>
+    <div class="cockpit"></div>
+
+    <section class="hud">
+      <div class="topbar">
+        <div class="brand">
+          <h1>Arithmetic Asteroids</h1>
+          <div class="subtitle">Training cockpit: Falcon-7</div>
+        </div>
+
+        <div class="status" aria-live="polite">
+          <div class="meter"><span>Score</span><strong id="score">0</strong></div>
+          <div class="meter"><span>Streak</span><strong id="streak">0</strong></div>
+          <div class="meter"><span>Shields</span><strong id="shields">5</strong></div>
+          <div class="meter"><span>Wave</span><strong id="wave">1</strong></div>
+        </div>
+
+        <div class="settings">
+          <label>Mission
+            <select id="mode">
+              <option value="mix">Mixed</option>
+              <option value="add">Addition</option>
+              <option value="sub">Subtraction</option>
+              <option value="mul">Multiplication</option>
+            </select>
+          </label>
+          <label>Level
+            <select id="level">
+              <option value="1">Rookie</option>
+              <option value="2">Pilot</option>
+              <option value="3">Commander</option>
+            </select>
+          </label>
+          <button id="pause" class="icon-button" title="Pause or resume" aria-label="Pause or resume">II</button>
+        </div>
+      </div>
+
+      <div id="intro" class="center-message">
+        <h2>Ready for launch?</h2>
+        <p>Solve the glowing asteroid problem, enter the answer, and fire the laser before it reaches the cockpit.</p>
+        <button id="start" class="launch">Start Mission</button>
+      </div>
+
+      <form id="answerForm" class="answer-console" autocomplete="off">
+        <div class="target-readout">
+          <span>Target Lock</span>
+          <strong id="problem">--</strong>
+        </div>
+        <input id="answer" class="answer-input" inputmode="numeric" pattern="-?[0-9]*" aria-label="Answer" placeholder="0">
+        <button class="fire-button" type="submit">FIRE</button>
+        <div class="message-log" aria-live="polite">
+          <span>Flight Computer</span>
+          <strong id="message">Choose a mission and launch.</strong>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const canvas = document.getElementById("space");
+    const ctx = canvas.getContext("2d");
+    const scoreEl = document.getElementById("score");
+    const streakEl = document.getElementById("streak");
+    const shieldsEl = document.getElementById("shields");
+    const waveEl = document.getElementById("wave");
+    const problemEl = document.getElementById("problem");
+    const answerEl = document.getElementById("answer");
+    const messageEl = document.getElementById("message");
+    const form = document.getElementById("answerForm");
+    const startButton = document.getElementById("start");
+    const pauseButton = document.getElementById("pause");
+    const intro = document.getElementById("intro");
+    const modeEl = document.getElementById("mode");
+    const levelEl = document.getElementById("level");
+
+    const state = {
+      running: false,
+      paused: false,
+      score: 0,
+      streak: 0,
+      shields: 5,
+      wave: 1,
+      asteroids: [],
+      particles: [],
+      lasers: [],
+      stars: [],
+      lastTime: 0,
+      spawnTimer: 0,
+      nextId: 1,
+      shake: 0,
+      flash: 0
+    };
+
+    const random = (min, max) => min + Math.random() * (max - min);
+    const pick = (items) => items[Math.floor(Math.random() * items.length)];
+
+    function resize() {
+      const ratio = Math.max(1, window.devicePixelRatio || 1);
+      canvas.width = Math.floor(window.innerWidth * ratio);
+      canvas.height = Math.floor(window.innerHeight * ratio);
+      canvas.style.width = `${window.innerWidth}px`;
+      canvas.style.height = `${window.innerHeight}px`;
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      makeStars();
+    }
+
+    function makeStars() {
+      const count = Math.floor((window.innerWidth * window.innerHeight) / 9500);
+      state.stars = Array.from({ length: count }, () => ({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        r: random(0.45, 1.7),
+        speed: random(3, 18),
+        alpha: random(0.35, 0.95)
+      }));
+    }
+
+    function resetGame() {
+      state.running = true;
+      state.paused = false;
+      state.score = 0;
+      state.streak = 0;
+      state.shields = 5;
+      state.wave = 1;
+      state.asteroids = [];
+      state.particles = [];
+      state.lasers = [];
+      state.spawnTimer = 0;
+      state.lastTime = performance.now();
+      intro.classList.add("hidden");
+      pauseButton.textContent = "II";
+      setMessage("Target the glowing equation.");
+      spawnAsteroid(true);
+      updateHud();
+      answerEl.focus();
+    }
+
+    function operationPool() {
+      const mode = modeEl.value;
+      if (mode === "mix") return ["add", "sub", "mul"];
+      return [mode];
+    }
+
+    function createProblem() {
+      const level = Number(levelEl.value);
+      const op = pick(operationPool());
+      let a;
+      let b;
+      let answer;
+      let text;
+
+      if (op === "mul") {
+        const max = level === 1 ? 5 : level === 2 ? 9 : 12;
+        a = Math.floor(random(2, max + 1));
+        b = Math.floor(random(2, max + 1));
+        answer = a * b;
+        text = `${a} x ${b}`;
+      } else if (op === "sub") {
+        const max = level === 1 ? 12 : level === 2 ? 25 : 60;
+        a = Math.floor(random(4, max + 1));
+        b = Math.floor(random(1, a + 1));
+        answer = a - b;
+        text = `${a} - ${b}`;
+      } else {
+        const max = level === 1 ? 10 : level === 2 ? 25 : 60;
+        a = Math.floor(random(1, max + 1));
+        b = Math.floor(random(1, max + 1));
+        answer = a + b;
+        text = `${a} + ${b}`;
+      }
+
+      return { text, answer };
+    }
+
+    function spawnAsteroid(forceCenter = false) {
+      const problem = createProblem();
+      const size = random(42, 66);
+      const laneLeft = Math.max(80, window.innerWidth * 0.12);
+      const laneRight = Math.min(window.innerWidth - 80, window.innerWidth * 0.88);
+      const level = Number(levelEl.value);
+      const speed = random(13 + level * 4 + state.wave * 1.4, 25 + level * 6 + state.wave * 1.9);
+
+      state.asteroids.push({
+        id: state.nextId++,
+        x: forceCenter ? window.innerWidth / 2 : random(laneLeft, laneRight),
+        y: -size - random(0, 90),
+        vx: random(-8, 8),
+        vy: speed,
+        radius: size,
+        rotation: random(0, Math.PI * 2),
+        spin: random(-0.7, 0.7),
+        problem,
+        hit: false,
+        facets: Array.from({ length: 13 }, (_, index) => {
+          const angle = (Math.PI * 2 * index) / 13;
+          return {
+            angle,
+            radius: random(0.72, 1.1)
+          };
+        })
+      });
+      chooseTarget();
+    }
+
+    function chooseTarget() {
+      const target = getTarget();
+      problemEl.textContent = target ? target.problem.text : "--";
+    }
+
+    function getTarget() {
+      if (!state.asteroids.length) return null;
+      return [...state.asteroids]
+        .filter((asteroid) => !asteroid.hit)
+        .sort((a, b) => b.y - a.y)[0] || null;
+    }
+
+    function updateHud() {
+      scoreEl.textContent = state.score;
+      streakEl.textContent = state.streak;
+      shieldsEl.textContent = state.shields;
+      waveEl.textContent = state.wave;
+      chooseTarget();
+    }
+
+    function setMessage(text) {
+      messageEl.textContent = text;
+    }
+
+    function fire(answer) {
+      if (!state.running || state.paused) return;
+      const target = getTarget();
+      if (!target) {
+        setMessage("No target in range.");
+        return;
+      }
+
+      const numericAnswer = Number(answer);
+      if (!Number.isFinite(numericAnswer)) {
+        setMessage("Enter a number.");
+        return;
+      }
+
+      if (numericAnswer === target.problem.answer) {
+        target.hit = true;
+        state.score += 10 + state.streak * 2 + state.wave;
+        state.streak += 1;
+        state.flash = 1;
+        state.lasers.push({
+          x1: window.innerWidth / 2,
+          y1: window.innerHeight - 104,
+          x2: target.x,
+          y2: target.y,
+          life: 0.18
+        });
+        explode(target.x, target.y, target.radius);
+        state.asteroids = state.asteroids.filter((asteroid) => asteroid.id !== target.id);
+        if (state.streak > 0 && state.streak % 5 === 0) {
+          state.wave += 1;
+          setMessage(`Streak ${state.streak}. Wave ${state.wave}.`);
+        } else {
+          setMessage(pick(["Direct hit.", "Asteroid vaporized.", "Nice shot.", "Target cleared."]));
+        }
+      } else {
+        state.streak = 0;
+        state.shake = 0.32;
+        setMessage(`${target.problem.text} needs another shot.`);
+      }
+
+      answerEl.value = "";
+      updateHud();
+    }
+
+    function explode(x, y, radius) {
+      for (let i = 0; i < 26; i += 1) {
+        const angle = random(0, Math.PI * 2);
+        const speed = random(45, 190);
+        state.particles.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          r: random(1.4, 4.5),
+          life: random(0.35, 0.95),
+          color: pick(["#fbbf24", "#fb7185", "#93c5fd", "#e5e7eb"])
+        });
+      }
+    }
+
+    function damage() {
+      state.shields -= 1;
+      state.streak = 0;
+      state.shake = 0.55;
+      setMessage(state.shields > 0 ? "Impact on shields." : "Mission reset available.");
+      if (state.shields <= 0) {
+        state.running = false;
+        intro.classList.remove("hidden");
+        intro.querySelector("h2").textContent = "Mission complete";
+        intro.querySelector("p").textContent = `Final score: ${state.score}. Launch again when ready.`;
+        startButton.textContent = "Relaunch";
+      }
+      updateHud();
+    }
+
+    function update(dt) {
+      if (!state.running || state.paused) return;
+
+      state.spawnTimer -= dt;
+      const maxAsteroids = Math.min(3 + Math.floor(state.wave / 2), 7);
+      if (state.spawnTimer <= 0 && state.asteroids.length < maxAsteroids) {
+        spawnAsteroid();
+        state.spawnTimer = Math.max(0.9, 3.1 - state.wave * 0.11 - Number(levelEl.value) * 0.16);
+      }
+
+      for (const star of state.stars) {
+        star.y += star.speed * dt;
+        if (star.y > window.innerHeight) {
+          star.y = -4;
+          star.x = Math.random() * window.innerWidth;
+        }
+      }
+
+      for (const asteroid of state.asteroids) {
+        asteroid.x += asteroid.vx * dt;
+        asteroid.y += asteroid.vy * dt;
+        asteroid.rotation += asteroid.spin * dt;
+        const margin = asteroid.radius + 10;
+        if (asteroid.x < margin || asteroid.x > window.innerWidth - margin) {
+          asteroid.vx *= -1;
+        }
+      }
+
+      const dangerLine = window.innerHeight - Math.min(135, window.innerHeight * 0.19);
+      const survivors = [];
+      for (const asteroid of state.asteroids) {
+        if (asteroid.y - asteroid.radius > dangerLine) {
+          explode(asteroid.x, dangerLine, asteroid.radius * 0.65);
+          damage();
+        } else {
+          survivors.push(asteroid);
+        }
+      }
+      state.asteroids = survivors;
+
+      for (const particle of state.particles) {
+        particle.x += particle.vx * dt;
+        particle.y += particle.vy * dt;
+        particle.vy += 80 * dt;
+        particle.life -= dt;
+      }
+      state.particles = state.particles.filter((particle) => particle.life > 0);
+
+      for (const laser of state.lasers) {
+        laser.life -= dt;
+      }
+      state.lasers = state.lasers.filter((laser) => laser.life > 0);
+
+      state.shake = Math.max(0, state.shake - dt);
+      state.flash = Math.max(0, state.flash - dt * 2);
+      chooseTarget();
+    }
+
+    function drawAsteroid(asteroid, target) {
+      ctx.save();
+      ctx.translate(asteroid.x, asteroid.y);
+      ctx.rotate(asteroid.rotation);
+      ctx.beginPath();
+      asteroid.facets.forEach((facet, index) => {
+        const x = Math.cos(facet.angle) * asteroid.radius * facet.radius;
+        const y = Math.sin(facet.angle) * asteroid.radius * facet.radius;
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      const gradient = ctx.createRadialGradient(-asteroid.radius * 0.35, -asteroid.radius * 0.4, 4, 0, 0, asteroid.radius * 1.25);
+      gradient.addColorStop(0, "#aeb9c9");
+      gradient.addColorStop(0.45, "#64748b");
+      gradient.addColorStop(1, "#283244");
+      ctx.fillStyle = gradient;
+      ctx.fill();
+      ctx.lineWidth = target ? 4 : 2;
+      ctx.strokeStyle = target ? "#7dd3fc" : "rgba(226, 232, 240, 0.34)";
+      ctx.stroke();
+
+      ctx.globalAlpha = 0.32;
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 5; i += 1) {
+        ctx.beginPath();
+        ctx.arc(random(-8, 8), random(-8, 8), random(5, asteroid.radius * 0.18), 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const fontSize = Math.max(18, Math.min(30, asteroid.radius * 0.46));
+      ctx.font = `900 ${fontSize}px Inter, system-ui, sans-serif`;
+      const textWidth = ctx.measureText(asteroid.problem.text).width;
+      const plateWidth = Math.max(textWidth + 22, asteroid.radius * 1.22);
+      ctx.fillStyle = target ? "rgba(2, 8, 23, 0.92)" : "rgba(2, 8, 23, 0.72)";
+      roundRect(ctx, asteroid.x - plateWidth / 2, asteroid.y - 18, plateWidth, 36, 6);
+      ctx.fill();
+      ctx.strokeStyle = target ? "rgba(125, 211, 252, 0.8)" : "rgba(255, 255, 255, 0.24)";
+      ctx.stroke();
+      ctx.fillStyle = "#f8fafc";
+      ctx.fillText(asteroid.problem.text, asteroid.x, asteroid.y + 1);
+      ctx.restore();
+    }
+
+    function roundRect(context, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      context.beginPath();
+      context.moveTo(x + r, y);
+      context.arcTo(x + width, y, x + width, y + height, r);
+      context.arcTo(x + width, y + height, x, y + height, r);
+      context.arcTo(x, y + height, x, y, r);
+      context.arcTo(x, y, x + width, y, r);
+      context.closePath();
+    }
+
+    function draw() {
+      const shakeX = state.shake ? random(-8, 8) * state.shake : 0;
+      const shakeY = state.shake ? random(-5, 5) * state.shake : 0;
+      ctx.save();
+      ctx.translate(shakeX, shakeY);
+      ctx.clearRect(-20, -20, window.innerWidth + 40, window.innerHeight + 40);
+
+      const bg = ctx.createLinearGradient(0, 0, 0, window.innerHeight);
+      bg.addColorStop(0, "#071328");
+      bg.addColorStop(0.52, "#050918");
+      bg.addColorStop(1, "#02030a");
+      ctx.fillStyle = bg;
+      ctx.fillRect(-20, -20, window.innerWidth + 40, window.innerHeight + 40);
+
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      for (const star of state.stars) {
+        ctx.globalAlpha = star.alpha;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      drawPlanet();
+
+      const target = getTarget();
+      for (const asteroid of state.asteroids) {
+        drawAsteroid(asteroid, target && asteroid.id === target.id);
+      }
+
+      for (const laser of state.lasers) {
+        const alpha = Math.max(0, laser.life / 0.18);
+        ctx.strokeStyle = `rgba(125, 211, 252, ${alpha})`;
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(laser.x1, laser.y1);
+        ctx.lineTo(laser.x2, laser.y2);
+        ctx.stroke();
+        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      for (const particle of state.particles) {
+        ctx.globalAlpha = Math.max(0, particle.life);
+        ctx.fillStyle = particle.color;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      drawShipNose();
+      if (state.flash > 0) {
+        ctx.fillStyle = `rgba(125, 211, 252, ${state.flash * 0.12})`;
+        ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+      }
+      ctx.restore();
+    }
+
+    function drawPlanet() {
+      const x = window.innerWidth * 0.12;
+      const y = window.innerHeight * 0.72;
+      const r = Math.min(150, window.innerWidth * 0.16);
+      const gradient = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, 4, x, y, r);
+      gradient.addColorStop(0, "rgba(110, 231, 183, 0.32)");
+      gradient.addColorStop(0.55, "rgba(14, 165, 233, 0.18)");
+      gradient.addColorStop(1, "rgba(14, 165, 233, 0)");
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawShipNose() {
+      const x = window.innerWidth / 2;
+      const y = window.innerHeight - 34;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.fillStyle = "#0f172a";
+      ctx.strokeStyle = "rgba(191, 219, 254, 0.28)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, -92);
+      ctx.lineTo(52, 38);
+      ctx.lineTo(-52, 38);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#38bdf8";
+      ctx.globalAlpha = 0.72;
+      ctx.beginPath();
+      ctx.moveTo(0, -72);
+      ctx.lineTo(18, 8);
+      ctx.lineTo(-18, 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+
+    function loop(time) {
+      const dt = Math.min(0.033, (time - state.lastTime) / 1000 || 0);
+      state.lastTime = time;
+      update(dt);
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      fire(answerEl.value.trim());
+    });
+
+    startButton.addEventListener("click", () => {
+      intro.querySelector("h2").textContent = "Ready for launch?";
+      intro.querySelector("p").textContent = "Solve the glowing asteroid problem, enter the answer, and fire the laser before it reaches the cockpit.";
+      startButton.textContent = "Start Mission";
+      resetGame();
+    });
+
+    pauseButton.addEventListener("click", () => {
+      if (!state.running) return;
+      state.paused = !state.paused;
+      pauseButton.textContent = state.paused ? "▶" : "II";
+      setMessage(state.paused ? "Mission paused." : "Target reacquired.");
+      answerEl.focus();
+    });
+
+    modeEl.addEventListener("change", () => {
+      setMessage("Mission profile updated.");
+    });
+
+    levelEl.addEventListener("change", () => {
+      setMessage("Difficulty updated.");
+    });
+
+    window.addEventListener("resize", resize);
+    resize();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>

@@ -242,11 +242,11 @@
       grid-row: 3;
       align-self: end;
       justify-self: center;
-      width: min(760px, calc(100vw - 24px));
+      width: min(860px, calc(100vw - 24px));
       border-radius: 8px 8px 0 0;
       padding: 12px;
       display: grid;
-      grid-template-columns: minmax(120px, 1fr) minmax(150px, 230px) 112px minmax(120px, 1fr);
+      grid-template-columns: minmax(130px, 1fr) minmax(260px, 1.7fr) minmax(130px, 1fr);
       gap: 10px;
       align-items: center;
       transform: translateY(1px);
@@ -284,23 +284,43 @@
       white-space: nowrap;
     }
 
-    .answer-input {
+    .choice-grid {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .choice-button {
       height: 56px;
       min-width: 0;
-      width: 100%;
       border: 1px solid rgba(125, 211, 252, 0.48);
       border-radius: 6px;
-      background: rgba(2, 6, 23, 0.9);
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(3, 7, 18, 0.94));
       color: var(--text);
       text-align: center;
       font-size: 1.65rem;
       font-weight: 900;
       font-variant-numeric: tabular-nums;
+      cursor: pointer;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
     }
 
-    .fire-button {
-      height: 56px;
-      font-size: 0.96rem;
+    .choice-button:hover,
+    .choice-button:focus-visible {
+      border-color: var(--accent);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .choice-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.42;
+    }
+
+    .choice-button.miss {
+      border-color: rgba(251, 113, 133, 0.8);
+      background: linear-gradient(180deg, rgba(127, 29, 29, 0.82), rgba(69, 10, 10, 0.9));
     }
 
     .message-log {
@@ -387,16 +407,13 @@
       }
 
       .answer-console {
-        grid-template-columns: 1fr 116px;
+        grid-template-columns: minmax(0, 1fr);
       }
 
       .target-readout,
+      .choice-grid,
       .message-log {
         grid-column: 1 / -1;
-      }
-
-      .fire-button {
-        width: 116px;
       }
     }
 
@@ -437,18 +454,18 @@
       }
 
       .answer-console {
-        grid-template-columns: minmax(0, 1fr) 104px;
+        grid-template-columns: minmax(0, 1fr);
         padding: 8px;
         gap: 7px;
       }
 
-      .answer-input,
-      .fire-button {
-        height: 48px;
+      .choice-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
-      .fire-button {
-        width: 104px;
+      .choice-button {
+        height: 48px;
+        font-size: 1.35rem;
       }
     }
   </style>
@@ -494,22 +511,21 @@
 
       <div id="intro" class="center-message">
         <h2>Ready for launch?</h2>
-        <p>Solve the glowing asteroid problem, enter the answer, and fire the laser before it reaches the cockpit.</p>
+        <p>Solve the glowing asteroid problem and tap the matching answer before it reaches the cockpit.</p>
         <button id="start" class="launch">Start Mission</button>
       </div>
 
-      <form id="answerForm" class="answer-console" autocomplete="off">
+      <div id="answerConsole" class="answer-console">
         <div class="target-readout">
           <span>Target Lock</span>
           <strong id="problem">--</strong>
         </div>
-        <input id="answer" class="answer-input" inputmode="numeric" pattern="-?[0-9]*" aria-label="Answer" placeholder="0">
-        <button class="fire-button" type="submit">FIRE</button>
+        <div id="choices" class="choice-grid" aria-label="Answer choices"></div>
         <div class="message-log" aria-live="polite">
           <span>Flight Computer</span>
           <strong id="message">Choose a mission and launch.</strong>
         </div>
-      </form>
+      </div>
     </section>
   </main>
 
@@ -521,9 +537,8 @@
     const shieldsEl = document.getElementById("shields");
     const waveEl = document.getElementById("wave");
     const problemEl = document.getElementById("problem");
-    const answerEl = document.getElementById("answer");
+    const choiceGrid = document.getElementById("choices");
     const messageEl = document.getElementById("message");
-    const form = document.getElementById("answerForm");
     const startButton = document.getElementById("start");
     const pauseButton = document.getElementById("pause");
     const intro = document.getElementById("intro");
@@ -545,7 +560,8 @@
       spawnTimer: 0,
       nextId: 1,
       shake: 0,
-      flash: 0
+      flash: 0,
+      choiceTargetId: null
     };
 
     const random = (min, max) => min + Math.random() * (max - min);
@@ -583,13 +599,13 @@
       state.particles = [];
       state.lasers = [];
       state.spawnTimer = 0;
+      state.choiceTargetId = null;
       state.lastTime = performance.now();
       intro.classList.add("hidden");
       pauseButton.textContent = "II";
       setMessage("Target the glowing equation.");
       spawnAsteroid(true);
       updateHud();
-      answerEl.focus();
     }
 
     function operationPool() {
@@ -629,6 +645,33 @@
       return { text, answer };
     }
 
+    function shuffled(items) {
+      const copy = [...items];
+      for (let i = copy.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function createChoices(answer) {
+      const choices = new Set([answer]);
+      const baseDeltas = [-10, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 10];
+      const deltas = shuffled(baseDeltas);
+
+      for (const delta of deltas) {
+        if (choices.size >= 4) break;
+        const candidate = answer + delta;
+        if (candidate >= 0) choices.add(candidate);
+      }
+
+      while (choices.size < 4) {
+        choices.add(answer + Math.floor(random(1, 13)) + choices.size);
+      }
+
+      return shuffled([...choices]);
+    }
+
     function spawnAsteroid(forceCenter = false) {
       const problem = createProblem();
       const size = random(42, 66);
@@ -647,6 +690,7 @@
         rotation: random(0, Math.PI * 2),
         spin: random(-0.7, 0.7),
         problem,
+        choices: createChoices(problem.answer),
         hit: false,
         facets: Array.from({ length: 13 }, (_, index) => {
           const angle = (Math.PI * 2 * index) / 13;
@@ -662,6 +706,44 @@
     function chooseTarget() {
       const target = getTarget();
       problemEl.textContent = target ? target.problem.text : "--";
+      if ((target && target.id) !== state.choiceTargetId) {
+        renderChoices(target);
+        state.choiceTargetId = target ? target.id : null;
+      }
+    }
+
+    function renderChoices(target) {
+      choiceGrid.innerHTML = "";
+
+      if (!target) {
+        for (let i = 0; i < 4; i += 1) {
+          const button = document.createElement("button");
+          button.className = "choice-button";
+          button.type = "button";
+          button.disabled = true;
+          button.textContent = "--";
+          choiceGrid.appendChild(button);
+        }
+        return;
+      }
+
+      for (const choice of target.choices) {
+        const button = document.createElement("button");
+        button.className = "choice-button";
+        button.type = "button";
+        button.textContent = choice;
+        button.dataset.answer = String(choice);
+        button.disabled = state.paused || !state.running;
+        choiceGrid.appendChild(button);
+      }
+    }
+
+    function setChoicesEnabled(enabled) {
+      for (const button of choiceGrid.querySelectorAll(".choice-button")) {
+        if (!button.classList.contains("miss")) {
+          button.disabled = !enabled;
+        }
+      }
     }
 
     function getTarget() {
@@ -684,17 +766,16 @@
     }
 
     function fire(answer) {
-      if (!state.running || state.paused) return;
+      if (!state.running || state.paused) return false;
       const target = getTarget();
       if (!target) {
         setMessage("No target in range.");
-        return;
+        return false;
       }
 
       const numericAnswer = Number(answer);
       if (!Number.isFinite(numericAnswer)) {
-        setMessage("Enter a number.");
-        return;
+        return false;
       }
 
       if (numericAnswer === target.problem.answer) {
@@ -717,14 +798,15 @@
         } else {
           setMessage(pick(["Direct hit.", "Asteroid vaporized.", "Nice shot.", "Target cleared."]));
         }
+        updateHud();
+        return true;
       } else {
         state.streak = 0;
         state.shake = 0.32;
         setMessage(`${target.problem.text} needs another shot.`);
+        updateHud();
+        return false;
       }
-
-      answerEl.value = "";
-      updateHud();
     }
 
     function explode(x, y, radius) {
@@ -985,14 +1067,19 @@
       requestAnimationFrame(loop);
     }
 
-    form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      fire(answerEl.value.trim());
+    choiceGrid.addEventListener("click", (event) => {
+      const button = event.target.closest(".choice-button");
+      if (!button || button.disabled) return;
+      const correct = fire(button.dataset.answer);
+      if (!correct && state.running && !state.paused) {
+        button.classList.add("miss");
+        button.disabled = true;
+      }
     });
 
     startButton.addEventListener("click", () => {
       intro.querySelector("h2").textContent = "Ready for launch?";
-      intro.querySelector("p").textContent = "Solve the glowing asteroid problem, enter the answer, and fire the laser before it reaches the cockpit.";
+      intro.querySelector("p").textContent = "Solve the glowing asteroid problem and tap the matching answer before it reaches the cockpit.";
       startButton.textContent = "Start Mission";
       resetGame();
     });
@@ -1002,7 +1089,7 @@
       state.paused = !state.paused;
       pauseButton.textContent = state.paused ? "▶" : "II";
       setMessage(state.paused ? "Mission paused." : "Target reacquired.");
-      answerEl.focus();
+      setChoicesEnabled(!state.paused);
     });
 
     modeEl.addEventListener("change", () => {

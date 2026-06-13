@@ -66,17 +66,17 @@
       pointer-events: none;
       display: grid;
       grid-template-rows: auto 1fr auto;
-      padding: clamp(10px, 1.8vw, 22px);
-      gap: 12px;
+      padding: clamp(8px, 1.3vw, 16px);
+      gap: 8px;
       z-index: 2;
     }
 
     .topbar {
       grid-row: 1;
       display: grid;
-      grid-template-columns: minmax(180px, 1fr) auto minmax(180px, 1fr);
-      gap: 12px;
-      align-items: start;
+      grid-template-columns: minmax(150px, 1fr) auto minmax(180px, 1fr);
+      gap: 8px;
+      align-items: center;
     }
 
     .brand,
@@ -92,37 +92,37 @@
 
     .brand {
       width: fit-content;
-      min-width: 220px;
-      padding: 12px 14px;
+      min-width: 178px;
+      padding: 8px 10px;
       border-radius: 8px;
     }
 
     h1 {
       margin: 0;
-      font-size: clamp(1.05rem, 1.4vw, 1.3rem);
+      font-size: clamp(0.98rem, 1.2vw, 1.16rem);
       line-height: 1.05;
       letter-spacing: 0;
     }
 
     .subtitle {
-      margin-top: 4px;
+      margin-top: 2px;
       color: var(--muted);
-      font-size: 0.82rem;
+      font-size: 0.68rem;
     }
 
     .status {
       justify-self: center;
-      min-width: min(540px, 48vw);
+      min-width: min(430px, 44vw);
       border-radius: 8px;
-      padding: 10px;
+      padding: 6px;
       display: grid;
-      grid-template-columns: repeat(4, minmax(72px, 1fr));
-      gap: 8px;
+      grid-template-columns: repeat(4, minmax(58px, 1fr));
+      gap: 5px;
     }
 
     .meter {
-      min-height: 58px;
-      padding: 8px;
+      min-height: 42px;
+      padding: 5px 6px;
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 6px;
       background: rgba(255, 255, 255, 0.045);
@@ -132,48 +132,48 @@
     .meter span {
       display: block;
       color: var(--muted);
-      font-size: 0.68rem;
+      font-size: 0.56rem;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.05em;
       white-space: nowrap;
     }
 
     .meter strong {
       display: block;
-      margin-top: 2px;
-      font-size: clamp(1.05rem, 2.1vw, 1.55rem);
+      margin-top: 1px;
+      font-size: clamp(1rem, 1.55vw, 1.25rem);
       line-height: 1.15;
     }
 
     .settings {
       justify-self: end;
-      width: min(390px, 34vw);
+      width: min(330px, 31vw);
       border-radius: 8px;
-      padding: 10px;
+      padding: 6px;
       display: grid;
       grid-template-columns: 1fr 1fr auto;
-      gap: 8px;
+      gap: 6px;
       align-items: end;
     }
 
     label {
       display: grid;
-      gap: 4px;
+      gap: 2px;
       color: var(--muted);
-      font-size: 0.72rem;
+      font-size: 0.58rem;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.04em;
     }
 
     select,
     input[type="number"] {
       width: 100%;
-      min-height: 40px;
+      min-height: 32px;
       border: 1px solid rgba(147, 197, 253, 0.32);
       border-radius: 6px;
       background: rgba(2, 6, 23, 0.82);
       color: var(--text);
-      padding: 0 10px;
+      padding: 0 8px;
       outline: none;
     }
 
@@ -183,9 +183,8 @@
       box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.14);
     }
 
-    .icon-button,
-    .fire-button {
-      min-height: 40px;
+    .icon-button {
+      min-height: 32px;
       border: 1px solid rgba(125, 211, 252, 0.46);
       border-radius: 6px;
       background: linear-gradient(180deg, rgba(14, 165, 233, 0.95), rgba(3, 105, 161, 0.95));
@@ -196,8 +195,8 @@
     }
 
     .icon-button {
-      width: 44px;
-      font-size: 1.05rem;
+      width: 38px;
+      font-size: 0.9rem;
     }
 
     .center-message {
@@ -387,23 +386,41 @@
       }
 
       .topbar {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(132px, 0.8fr) minmax(260px, 1.2fr);
+        grid-template-areas:
+          "brand settings"
+          "status status";
+        align-items: center;
       }
 
-      .brand,
-      .status,
-      .settings {
+      .brand {
+        grid-area: brand;
         justify-self: stretch;
         width: 100%;
         min-width: 0;
       }
 
       .status {
-        grid-template-columns: repeat(4, 1fr);
+        grid-area: status;
+        justify-self: stretch;
+        width: 100%;
+        min-width: 0;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
       }
 
       .settings {
-        grid-template-columns: 1fr 1fr 48px;
+        grid-area: settings;
+        justify-self: stretch;
+        width: 100%;
+        min-width: 0;
+      }
+
+      .status {
+        padding: 5px;
+      }
+
+      .settings {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 38px;
       }
 
       .answer-console {
@@ -423,34 +440,83 @@
       }
 
       .hud {
-        padding: 8px;
-        gap: 8px;
+        padding: 6px;
+        gap: 6px;
+      }
+
+      .topbar {
+        grid-template-columns: minmax(92px, 0.64fr) minmax(190px, 1.36fr);
+        gap: 5px;
+      }
+
+      .brand {
+        padding: 6px 7px;
+      }
+
+      h1 {
+        font-size: 0.82rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .subtitle {
+        display: none;
       }
 
       .status {
         grid-template-columns: repeat(4, 1fr);
-        gap: 5px;
-        padding: 6px;
+        gap: 4px;
+        padding: 3px;
       }
 
       .meter {
-        min-height: 48px;
-        padding: 6px 4px;
+        min-height: 28px;
+        padding: 2px 3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
       }
 
       .meter span {
-        font-size: 0.58rem;
-        letter-spacing: 0.04em;
+        font-size: 0.46rem;
+        letter-spacing: 0.02em;
+      }
+
+      .meter strong {
+        font-size: 0.86rem;
+        margin-top: 0;
       }
 
       .settings {
-        grid-template-columns: 1fr 1fr 44px;
-        gap: 6px;
-        padding: 6px;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 34px;
+        gap: 4px;
+        padding: 4px;
+      }
+
+      label {
+        gap: 0;
+      }
+
+      .control-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+
+      select {
+        min-height: 26px;
+        padding: 0 5px;
+        font-size: 0.78rem;
       }
 
       .icon-button {
-        width: 44px;
+        width: 34px;
+        min-height: 26px;
       }
 
       .answer-console {
@@ -490,16 +556,16 @@
         </div>
 
         <div class="settings">
-          <label>Mission
-            <select id="mode">
+          <label><span class="control-label">Mission</span>
+            <select id="mode" aria-label="Mission">
               <option value="mix">Mixed</option>
               <option value="add">Addition</option>
               <option value="sub">Subtraction</option>
               <option value="mul">Multiplication</option>
             </select>
           </label>
-          <label>Level
-            <select id="level">
+          <label><span class="control-label">Level</span>
+            <select id="level" aria-label="Level">
               <option value="1">Rookie</option>
               <option value="2">Pilot</option>
               <option value="3">Commander</option>
@@ -1102,6 +1168,7 @@
 
     window.addEventListener("resize", resize);
     resize();
+    renderChoices(null);
     requestAnimationFrame(loop);
   </script>
 </body>

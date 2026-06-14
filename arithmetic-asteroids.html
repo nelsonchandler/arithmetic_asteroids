@@ -151,7 +151,7 @@
       border-radius: 8px;
       padding: 6px;
       display: grid;
-      grid-template-columns: 1fr 1fr auto;
+      grid-template-columns: 1fr 1fr auto auto;
       gap: 6px;
       align-items: end;
     }
@@ -199,6 +199,12 @@
       font-size: 0.9rem;
     }
 
+    .sound-button {
+      width: 46px;
+      font-size: 0.72rem;
+      letter-spacing: 0;
+    }
+
     .center-message {
       grid-row: 2;
       align-self: center;
@@ -235,6 +241,81 @@
       color: #022c22;
       cursor: pointer;
       font-weight: 900;
+    }
+
+    .alien-message {
+      grid-row: 2;
+      align-self: center;
+      justify-self: center;
+      width: min(560px, calc(100vw - 28px));
+      padding: 14px;
+      border: 1px solid rgba(110, 231, 183, 0.46);
+      border-radius: 8px;
+      background: rgba(3, 17, 28, 0.9);
+      box-shadow: 0 22px 70px rgba(0, 0, 0, 0.42);
+      backdrop-filter: blur(16px);
+      pointer-events: auto;
+      display: grid;
+      grid-template-columns: 104px minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+    }
+
+    .alien-face {
+      width: 104px;
+      aspect-ratio: 1;
+      border: 2px solid rgba(167, 243, 208, 0.82);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 34% 38%, #03141f 0 7%, transparent 7.5%),
+        radial-gradient(circle at 66% 38%, #03141f 0 7%, transparent 7.5%),
+        radial-gradient(ellipse at 50% 68%, transparent 0 15%, rgba(3, 20, 31, 0.78) 16% 19%, transparent 20%),
+        radial-gradient(circle at 50% 42%, #a7f3d0 0, #34d399 48%, #047857 100%);
+      box-shadow: 0 0 34px rgba(52, 211, 153, 0.26), inset 0 -16px 28px rgba(2, 44, 34, 0.36);
+      position: relative;
+    }
+
+    .alien-face::before,
+    .alien-face::after {
+      content: "";
+      position: absolute;
+      top: 5px;
+      width: 34px;
+      height: 2px;
+      background: rgba(167, 243, 208, 0.9);
+      transform-origin: center;
+    }
+
+    .alien-face::before {
+      left: 10px;
+      transform: rotate(48deg);
+    }
+
+    .alien-face::after {
+      right: 10px;
+      transform: rotate(-48deg);
+    }
+
+    .alien-copy span {
+      display: block;
+      color: var(--good);
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .alien-copy h2 {
+      margin: 4px 0 6px;
+      font-size: clamp(1.35rem, 3vw, 2rem);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .alien-copy p {
+      margin: 0 0 12px;
+      color: #dffdf0;
+      line-height: 1.4;
     }
 
     .answer-console {
@@ -420,7 +501,7 @@
       }
 
       .settings {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 38px;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 34px 42px;
       }
 
       .answer-console {
@@ -490,7 +571,7 @@
       }
 
       .settings {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 34px;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 30px 38px;
         gap: 4px;
         padding: 4px;
       }
@@ -515,8 +596,13 @@
       }
 
       .icon-button {
-        width: 34px;
+        width: 30px;
         min-height: 26px;
+      }
+
+      .sound-button {
+        width: 38px;
+        font-size: 0.62rem;
       }
 
       .answer-console {
@@ -532,6 +618,16 @@
       .choice-button {
         height: 48px;
         font-size: 1.35rem;
+      }
+
+      .alien-message {
+        grid-template-columns: 72px minmax(0, 1fr);
+        gap: 10px;
+        padding: 10px;
+      }
+
+      .alien-face {
+        width: 72px;
       }
     }
   </style>
@@ -572,6 +668,7 @@
             </select>
           </label>
           <button id="pause" class="icon-button" title="Pause or resume" aria-label="Pause or resume">II</button>
+          <button id="sound" class="icon-button sound-button" title="Sound effects on or off" aria-label="Sound effects on or off" aria-pressed="true">SFX</button>
         </div>
       </div>
 
@@ -579,6 +676,16 @@
         <h2>Ready for launch?</h2>
         <p>Solve the glowing asteroid problem and tap the matching answer before it reaches the cockpit.</p>
         <button id="start" class="launch">Start Mission</button>
+      </div>
+
+      <div id="alienBreak" class="alien-message hidden" role="dialog" aria-live="polite" aria-labelledby="alienTitle">
+        <div class="alien-face" aria-hidden="true"></div>
+        <div class="alien-copy">
+          <span>Friendly Signal</span>
+          <h2 id="alienTitle">Cosmic checkpoint</h2>
+          <p id="alienText">Your math beams are bright.</p>
+          <button id="continueMission" class="launch">Continue Mission</button>
+        </div>
       </div>
 
       <div id="answerConsole" class="answer-console">
@@ -607,7 +714,12 @@
     const messageEl = document.getElementById("message");
     const startButton = document.getElementById("start");
     const pauseButton = document.getElementById("pause");
+    const soundButton = document.getElementById("sound");
     const intro = document.getElementById("intro");
+    const alienBreak = document.getElementById("alienBreak");
+    const alienTitle = document.getElementById("alienTitle");
+    const alienText = document.getElementById("alienText");
+    const continueMissionButton = document.getElementById("continueMission");
     const modeEl = document.getElementById("mode");
     const levelEl = document.getElementById("level");
 
@@ -627,11 +739,135 @@
       nextId: 1,
       shake: 0,
       flash: 0,
-      choiceTargetId: null
+      choiceTargetId: null,
+      soundOn: true,
+      inBreak: false,
+      nextBreakWave: 4
+    };
+
+    const audioState = {
+      context: null,
+      master: null
     };
 
     const random = (min, max) => min + Math.random() * (max - min);
     const pick = (items) => items[Math.floor(Math.random() * items.length)];
+    const alienMessages = [
+      {
+        title: "Zara says hello",
+        text: "Your number reflexes are sparkling. Take one deep space breath, then blast the next wave."
+      },
+      {
+        title: "Captain Velo reports",
+        text: "The asteroid belt noticed your streak. Keep choosing carefully and your shields will stay bright."
+      },
+      {
+        title: "Professor Nib checks in",
+        text: "Every quick answer is a tiny engine boost for your brain. Excellent mission work."
+      },
+      {
+        title: "Mira from Moonbase Seven",
+        text: "You cleared a whole sector. That is not luck; that is practice turning into power."
+      },
+      {
+        title: "Orbital coach Paxi",
+        text: "Mistakes are just scanner pings. Adjust, try again, and keep flying."
+      }
+    ];
+
+    function ensureAudio() {
+      if (!state.soundOn) return null;
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return null;
+
+      if (!audioState.context) {
+        audioState.context = new AudioContext();
+        audioState.master = audioState.context.createGain();
+        audioState.master.gain.value = 0.18;
+        audioState.master.connect(audioState.context.destination);
+      }
+
+      if (audioState.context.state === "suspended") {
+        audioState.context.resume();
+      }
+
+      return audioState.context;
+    }
+
+    function tone(frequency, duration, options = {}) {
+      const audio = ensureAudio();
+      if (!audio || !audioState.master) return;
+
+      const now = audio.currentTime;
+      const oscillator = audio.createOscillator();
+      const gain = audio.createGain();
+      oscillator.type = options.type || "sine";
+      oscillator.frequency.setValueAtTime(frequency, now);
+      if (options.endFrequency) {
+        oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, options.endFrequency), now + duration);
+      }
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(options.volume || 0.42, now + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      oscillator.connect(gain);
+      gain.connect(audioState.master);
+      oscillator.start(now);
+      oscillator.stop(now + duration + 0.02);
+    }
+
+    function noise(duration, options = {}) {
+      const audio = ensureAudio();
+      if (!audio || !audioState.master) return;
+
+      const sampleCount = Math.max(1, Math.floor(audio.sampleRate * duration));
+      const buffer = audio.createBuffer(1, sampleCount, audio.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < sampleCount; i += 1) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / sampleCount);
+      }
+
+      const source = audio.createBufferSource();
+      const filter = audio.createBiquadFilter();
+      const gain = audio.createGain();
+      source.buffer = buffer;
+      filter.type = options.filter || "lowpass";
+      filter.frequency.value = options.frequency || 900;
+      gain.gain.value = options.volume || 0.32;
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioState.master);
+      source.start();
+    }
+
+    function playSound(name) {
+      if (!state.soundOn) return;
+
+      if (name === "launch") {
+        tone(140, 0.18, { endFrequency: 360, type: "sawtooth", volume: 0.25 });
+        setTimeout(() => tone(420, 0.12, { type: "triangle", volume: 0.22 }), 90);
+      } else if (name === "hit") {
+        tone(760, 0.08, { endFrequency: 1180, type: "square", volume: 0.2 });
+        setTimeout(() => noise(0.14, { frequency: 2100, volume: 0.18 }), 35);
+      } else if (name === "miss") {
+        tone(190, 0.18, { endFrequency: 90, type: "sawtooth", volume: 0.22 });
+      } else if (name === "impact") {
+        noise(0.28, { frequency: 520, volume: 0.36 });
+        tone(92, 0.26, { endFrequency: 48, type: "sine", volume: 0.26 });
+      } else if (name === "wave") {
+        tone(440, 0.08, { type: "triangle", volume: 0.2 });
+        setTimeout(() => tone(660, 0.08, { type: "triangle", volume: 0.2 }), 85);
+        setTimeout(() => tone(880, 0.12, { type: "triangle", volume: 0.2 }), 170);
+      } else if (name === "gameover") {
+        tone(260, 0.18, { endFrequency: 180, type: "triangle", volume: 0.22 });
+        setTimeout(() => tone(160, 0.28, { endFrequency: 70, type: "triangle", volume: 0.24 }), 160);
+      } else if (name === "alien") {
+        tone(520, 0.07, { type: "sine", volume: 0.16 });
+        setTimeout(() => tone(780, 0.09, { type: "triangle", volume: 0.16 }), 90);
+        setTimeout(() => tone(620, 0.12, { type: "sine", volume: 0.14 }), 190);
+      } else if (name === "toggle") {
+        tone(620, 0.07, { type: "triangle", volume: 0.18 });
+      }
+    }
 
     function resize() {
       const ratio = Math.max(1, window.devicePixelRatio || 1);
@@ -666,10 +902,14 @@
       state.lasers = [];
       state.spawnTimer = 0;
       state.choiceTargetId = null;
+      state.inBreak = false;
+      state.nextBreakWave = 4;
       state.lastTime = performance.now();
       intro.classList.add("hidden");
+      alienBreak.classList.add("hidden");
       pauseButton.textContent = "II";
       setMessage("Target the glowing equation.");
+      playSound("launch");
       spawnAsteroid(true);
       updateHud();
     }
@@ -831,6 +1071,34 @@
       messageEl.textContent = text;
     }
 
+    function showAlienBreak() {
+      const message = pick(alienMessages);
+      state.inBreak = true;
+      state.paused = true;
+      state.asteroids = [];
+      state.choiceTargetId = null;
+      alienTitle.textContent = message.title;
+      alienText.textContent = message.text;
+      alienBreak.classList.remove("hidden");
+      pauseButton.textContent = "▶";
+      setChoicesEnabled(false);
+      setMessage("Friendly transmission received.");
+      renderChoices(null);
+      playSound("alien");
+    }
+
+    function resumeFromAlienBreak() {
+      if (!state.inBreak) return;
+      state.inBreak = false;
+      state.paused = false;
+      alienBreak.classList.add("hidden");
+      pauseButton.textContent = "II";
+      setMessage("Transmission complete. Target reacquired.");
+      spawnAsteroid(true);
+      updateHud();
+      playSound("launch");
+    }
+
     function fire(answer) {
       if (!state.running || state.paused) return false;
       const target = getTarget();
@@ -861,15 +1129,28 @@
         if (state.streak > 0 && state.streak % 5 === 0) {
           state.wave += 1;
           setMessage(`Streak ${state.streak}. Wave ${state.wave}.`);
+          playSound("wave");
+          updateHud();
+          if (state.wave >= state.nextBreakWave) {
+            state.nextBreakWave += 3;
+            showAlienBreak();
+          } else if (state.asteroids.length === 0) {
+            spawnAsteroid();
+          }
         } else {
           setMessage(pick(["Direct hit.", "Asteroid vaporized.", "Nice shot.", "Target cleared."]));
+          playSound("hit");
+          if (state.asteroids.length === 0) {
+            spawnAsteroid();
+          }
+          updateHud();
         }
-        updateHud();
         return true;
       } else {
         state.streak = 0;
         state.shake = 0.32;
         setMessage(`${target.problem.text} needs another shot.`);
+        playSound("miss");
         updateHud();
         return false;
       }
@@ -898,10 +1179,15 @@
       setMessage(state.shields > 0 ? "Impact on shields." : "Mission reset available.");
       if (state.shields <= 0) {
         state.running = false;
+        state.inBreak = false;
+        alienBreak.classList.add("hidden");
+        playSound("gameover");
         intro.classList.remove("hidden");
         intro.querySelector("h2").textContent = "Mission complete";
         intro.querySelector("p").textContent = `Final score: ${state.score}. Launch again when ready.`;
         startButton.textContent = "Relaunch";
+      } else {
+        playSound("impact");
       }
       updateHud();
     }
@@ -1152,10 +1438,23 @@
 
     pauseButton.addEventListener("click", () => {
       if (!state.running) return;
+      if (state.inBreak) return;
       state.paused = !state.paused;
       pauseButton.textContent = state.paused ? "▶" : "II";
       setMessage(state.paused ? "Mission paused." : "Target reacquired.");
       setChoicesEnabled(!state.paused);
+    });
+
+    continueMissionButton.addEventListener("click", () => {
+      resumeFromAlienBreak();
+    });
+
+    soundButton.addEventListener("click", () => {
+      state.soundOn = !state.soundOn;
+      soundButton.textContent = state.soundOn ? "SFX" : "OFF";
+      soundButton.setAttribute("aria-pressed", String(state.soundOn));
+      setMessage(state.soundOn ? "Sound effects online." : "Sound effects muted.");
+      if (state.soundOn) playSound("toggle");
     });
 
     modeEl.addEventListener("change", () => {
